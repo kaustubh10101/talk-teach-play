@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mic, MicOff, Volume2, Play, Pause, MessageCircle, Users } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Mic, MicOff, Volume2, Play, Pause, MessageCircle, Users, Globe } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 // TypeScript declarations for Speech Recognition
@@ -41,9 +42,21 @@ export const VoiceTutor: React.FC<VoiceTutorProps> = ({ mode, scenario }) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [conversation, setConversation] = useState<Array<{ role: 'user' | 'ai'; text: string }>>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState('en-US');
   const recognition = useRef<any>(null);
   const synthesis = useRef<SpeechSynthesis>(window.speechSynthesis);
   const { toast } = useToast();
+
+  const languages = [
+    { code: 'en-US', name: 'English', voice: 'en-US' },
+    { code: 'hi-IN', name: 'हिंदी (Hindi)', voice: 'hi-IN' },
+    { code: 'es-ES', name: 'Español', voice: 'es-ES' },
+    { code: 'fr-FR', name: 'Français', voice: 'fr-FR' },
+    { code: 'de-DE', name: 'Deutsch', voice: 'de-DE' },
+    { code: 'ja-JP', name: '日本語', voice: 'ja-JP' },
+    { code: 'ko-KR', name: '한국어', voice: 'ko-KR' },
+    { code: 'zh-CN', name: '中文', voice: 'zh-CN' },
+  ];
 
   // Initialize speech recognition
   useEffect(() => {
@@ -192,6 +205,14 @@ export const VoiceTutor: React.FC<VoiceTutorProps> = ({ mode, scenario }) => {
       utterance.rate = 0.9;
       utterance.pitch = 1.1;
       utterance.volume = 1;
+      utterance.lang = selectedLanguage;
+      
+      // Try to find a voice that matches the selected language
+      const voices = synthesis.current.getVoices();
+      const preferredVoice = voices.find(voice => voice.lang.startsWith(selectedLanguage.split('-')[0]));
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+      }
       
       utterance.onstart = () => setIsSpeaking(true);
       utterance.onend = () => setIsSpeaking(false);
@@ -241,6 +262,23 @@ export const VoiceTutor: React.FC<VoiceTutorProps> = ({ mode, scenario }) => {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Language Selector */}
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <Globe className="w-4 h-4 text-muted-foreground" />
+          <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Select language" />
+            </SelectTrigger>
+            <SelectContent>
+              {languages.map((lang) => (
+                <SelectItem key={lang.code} value={lang.code}>
+                  {lang.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Voice Controls */}
