@@ -133,42 +133,55 @@ export const VoiceTutor: React.FC<VoiceTutorProps> = ({ mode, scenario }) => {
   };
 
   const generateAIResponse = async (userText: string, mode: string, scenario?: string): Promise<string> => {
-    // This is a mock implementation - replace with actual OpenAI API call
-    const responses = {
-      chat: [
-        `That's a great question! Let me help you with that.`,
-        `I understand. Can you tell me more about that?`,
-        `Excellent! You're doing really well. What else would you like to know?`,
-        `That's interesting! Can you give me an example?`
-      ],
-      roleplay: {
-        school: [
-          `Nice to meet you! Do you like school?`,
-          `That's wonderful! What's your favorite subject?`,
-          `Great! Do you have many friends at school?`
-        ],
-        store: [
-          `That's a good choice! How many would you like?`,
-          `Perfect! That costs $2. Do you have money?`,
-          `Thank you for shopping with us! Have a great day!`
-        ],
-        home: [
-          `That sounds lovely! Do you help your family at home?`,
-          `What a nice family! What do you like to do together?`,
-          `That's wonderful! You're very helpful!`
-        ]
-      }
-    };
-
-    // Simple response selection logic
-    if (mode === 'chat') {
-      return responses.chat[Math.floor(Math.random() * responses.chat.length)];
-    } else if (mode === 'roleplay' && scenario) {
-      const scenarioResponses = responses.roleplay[scenario as keyof typeof responses.roleplay];
-      return scenarioResponses[Math.floor(Math.random() * scenarioResponses.length)];
-    }
+    const apiKey = localStorage.getItem('openai_api_key') || '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';
     
-    return "That's great! Keep practicing!";
+    let systemPrompt = '';
+    
+    if (mode === 'chat') {
+      systemPrompt = `You are Genie, a friendly English tutor for children aged 6-16. 
+      Keep responses simple, encouraging, and age-appropriate. 
+      Use examples they can relate to. Keep responses under 50 words.
+      Be patient and helpful in explaining English concepts.`;
+    } else if (mode === 'roleplay') {
+      const scenarioPrompts = {
+        school: `You are playing the role of a school friend or teacher. Keep the conversation natural and school-related. Ask about subjects, friends, activities. Keep responses under 30 words.`,
+        store: `You are a shopkeeper. Help the student practice buying things. Ask about quantities, prices, and be friendly. Keep responses under 30 words.`,
+        home: `You are a family member or friend visiting. Ask about family, home activities, and daily life. Keep responses under 30 words.`
+      };
+      systemPrompt = scenarioPrompts[scenario as keyof typeof scenarioPrompts] || 'Have a friendly conversation and keep responses short.';
+    }
+
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userText }
+          ],
+          max_tokens: 100,
+          temperature: 0.7,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.choices[0]?.message?.content || "I didn't understand that. Can you try again?";
+    } catch (error) {
+      console.error('OpenAI API error:', error);
+      // Fallback to simple response
+      return mode === 'chat' 
+        ? "That's interesting! Can you tell me more?" 
+        : "That's great! What else would you like to talk about?";
+    }
   };
 
   const speakText = (text: string) => {
