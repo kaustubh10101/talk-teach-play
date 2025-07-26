@@ -133,7 +133,8 @@ export const VoiceTutor: React.FC<VoiceTutorProps> = ({ mode, scenario }) => {
   };
 
   const generateAIResponse = async (userText: string, mode: string, scenario?: string): Promise<string> => {
-    const apiKey = localStorage.getItem('openai_api_key') || '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';
+    // Using Groq API (free tier available) - Get your free API key from https://console.groq.com/
+    const apiKey = localStorage.getItem('groq_api_key') || 'gsk_8QoJ2WGqYRhK5rJdLbJgWGdyb3FYLvFcQdR7XhNjFwEp9MxGqT4K2s';
     
     let systemPrompt = '';
     
@@ -152,14 +153,14 @@ export const VoiceTutor: React.FC<VoiceTutorProps> = ({ mode, scenario }) => {
     }
 
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: 'llama-3.1-8b-instant',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userText }
@@ -170,13 +171,13 @@ export const VoiceTutor: React.FC<VoiceTutorProps> = ({ mode, scenario }) => {
       });
 
       if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
+        throw new Error(`Groq API error: ${response.status}`);
       }
 
       const data = await response.json();
       return data.choices[0]?.message?.content || "I didn't understand that. Can you try again?";
     } catch (error) {
-      console.error('OpenAI API error:', error);
+      console.error('Groq API error:', error);
       // Fallback to simple response
       return mode === 'chat' 
         ? "That's interesting! Can you tell me more?" 
